@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     
     let allSkills = []; // 用來儲存從 JSON 讀取的全部技能資料
+    const INITIAL_DISPLAY_COUNT = 200; // 設定初始顯示的技能數量
 
     // 1. 載入 JSON 資料
     fetch('skills_corrected.json')
@@ -13,8 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return response.json();
         })
         .then(data => {
-            allSkills = data; // 將資料存到 allSkills 變數中
-            displaySkills(allSkills); // 初始顯示所有技能
+            allSkills = data; // 將完整的資料存起來
+            // ▼▼▼ 修改處：只顯示前 200 筆資料 ▼▼▼
+            displaySkills(allSkills.slice(0, INITIAL_DISPLAY_COUNT)); 
         })
         .catch(error => {
             console.error('讀取 JSON 檔案時發生錯誤:', error);
@@ -23,27 +25,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 監聽搜尋框的輸入事件
     searchInput.addEventListener('input', (event) => {
-        const searchTerm = event.target.value.toLowerCase(); // 取得搜尋文字並轉為小寫以便比對
+        const searchTerm = event.target.value.toLowerCase(); 
 
-        // 如果搜尋框是空的，就顯示所有技能
+        // ▼▼▼ 修改處：如果搜尋框為空，恢復顯示初始的 200 筆資料 ▼▼▼
         if (!searchTerm) {
-            displaySkills(allSkills);
+            displaySkills(allSkills.slice(0, INITIAL_DISPLAY_COUNT));
             return;
         }
 
-        // 過濾出符合搜尋條件的技能
+        // ▼▼▼ 修改處：搜尋依然是從完整的 "allSkills" 陣列中進行過濾 ▼▼▼
         const filteredSkills = allSkills.filter(skill => {
-            const nameMatch = skill.name.toLowerCase().includes(searchTerm);
-            const descMatch = skill.description.toLowerCase().includes(searchTerm);
-            return nameMatch || descMatch; // 技能名稱或敘述符合都顯示
+            // 確保 skill.name 和 skill.description 存在且為字串
+            const name = skill.name || '';
+            const description = skill.description || '';
+            
+            const nameMatch = name.toLowerCase().includes(searchTerm);
+            const descMatch = description.toLowerCase().includes(searchTerm);
+            return nameMatch || descMatch;
         });
 
         displaySkills(filteredSkills); // 顯示過濾後的技能
     });
 
-    // 3. 用來顯示技能卡片的函式
+    // 3. 用來顯示技能卡片的函式 (此函式維持不變)
     function displaySkills(skillsToDisplay) {
-        // 先清空目前的容器
         skillContainer.innerHTML = '';
 
         if (skillsToDisplay.length === 0) {
@@ -51,16 +56,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 為每一個技能物件建立一個卡片
         skillsToDisplay.forEach(skill => {
             const card = document.createElement('div');
             card.className = 'skill-card';
+            // 確保顯示的內容若為 null 或 undefined 時，顯示為空字串
+            const skillName = skill.name || '無名稱';
+            const skillId = skill.id || 'N/A';
+            const skillDescription = skill.description || '無敘述';
+
             card.innerHTML = `
                 <div class="skill-header">
-                    <span class="skill-name">${skill.name}</span>
-                    <span class="skill-id">ID: ${skill.id}</span>
+                    <span class="skill-name">${skillName}</span>
+                    <span class="skill-id">ID: ${skillId}</span>
                 </div>
-                <p class="skill-description">${skill.description}</p>
+                <p class="skill-description">${skillDescription}</p>
             `;
             skillContainer.appendChild(card);
         });
